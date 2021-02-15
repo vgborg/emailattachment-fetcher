@@ -34,7 +34,7 @@ public class EafProcessor {
         store.connect(configuration.getImapUser(), configuration.imapPassword);
 
 
-        LOG.info("connected");
+        LOG.debug("connected");
 
 
         Folder inboxFolder = store.getFolder(INBOX);

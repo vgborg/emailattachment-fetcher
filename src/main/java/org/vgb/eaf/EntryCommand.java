@@ -37,14 +37,18 @@ public class EntryCommand implements Runnable, QuarkusApplication {
     boolean imapDebug;
 
 
-    @CommandLine.Option(names = {"-a", "--attachments"}, description = "Where to store attachments")
+    @CommandLine.Option(names = {"-a", "--attachments"}, description = "Where to store attachments", paramLabel = "<dir>")
     String paramenter_dirProcessedAttachments;
 
-    @CommandLine.Option(names = {"-e", "--errors"}, description = "Where to store errornous mails")
+    @CommandLine.Option(names = {"-e", "--errors"}, description = "Where to store errornous mails", paramLabel = "<dir>")
     String paramenter_dirProcessedErrors;
 
-    @CommandLine.Option(names = {"-o", "--out"}, description = "Where to store processed emails")
+    @CommandLine.Option(names = {"-o", "--out"}, description = "Where to store processed emails", paramLabel = "<dir>")
     String paramenter_dirProcessedOut;
+
+
+    @CommandLine.Option(names = {"-s", "--seconds"}, description = "Repeat every x seconds", paramLabel = "<seconds>")
+    Integer paramenter_seconds;
 
 
     private static final Logger LOG = Logger.getLogger(EntryCommand.class);
@@ -77,10 +81,18 @@ public class EntryCommand implements Runnable, QuarkusApplication {
                 config_imapTarget, config_imapUser, config_imapPassword, imapDebug
         );
 
-        try {
-            eafProcessor.process(configuration);
-        } catch (Throwable e) {
-            LOG.error(e.getMessage(), e);
+        boolean repeat = (paramenter_seconds != null) && paramenter_seconds > 0;
+
+        while (repeat) {
+            try {
+                eafProcessor.process(configuration);
+                if (repeat) {
+                    LOG.infov("sleep {0} seconds to run again", paramenter_seconds);
+                    Thread.sleep(paramenter_seconds * 1000);
+                }
+            } catch (Throwable e) {
+                LOG.error(e.getMessage(), e);
+            }
         }
     }
 }
