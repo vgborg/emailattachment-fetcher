@@ -5,14 +5,20 @@ import org.jboss.logging.Logger;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.mail.*;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.Properties;
+import java.util.UUID;
 
 @ApplicationScoped
 public class EafProcessor {
     private static final Logger LOG = Logger.getLogger(EafProcessor.class);
     public static final String INBOX = "INBOX";
+
+    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm");
 
     @Inject
     MessageProcessor messageProcessor;
@@ -37,16 +43,32 @@ public class EafProcessor {
         LOG.infov("folder {0} contains {1} messages", inboxFolder.getName(), messages.length);
 
         for (Message msg : messages) {
+            boolean processed = false;
             try {
-                boolean processed = messageProcessor.processMessage(msg, configuration);
-                if (processed) {
-                    msg.setFlag(Flags.Flag.DELETED, true);
-                }
+                processed = messageProcessor.processMessage(msg, configuration);
             } catch (Exception e) {
-                LOG.error(e.getMessage(), e);
+                LOG.fatal(e.getMessage(), e);
+            }
+
+            msg.setFlag(Flags.Flag.SEEN, true);
+
+            try {
+                String messageFileTarget = processed ? configuration.getDirProcessedOut() : configuration.getDirProcessedErrors();
+                messageFileTarget += "/" + df.format(msg.getSentDate()) + " " + UUID.randomUUID().toString() + ".eml";
+                LOG.infov("store message in {0}", messageFileTarget);
+                FileOutputStream fos = new FileOutputStream(messageFileTarget);
+                BufferedOutputStream bos = new BufferedOutputStream(fos);
+                msg.writeTo(bos);
+                bos.close();
+                fos.close();
+
+                msg.setFlag(Flags.Flag.DELETED, true);
+            } catch (Exception e) {
+                LOG.error("error postprocessing - " + e.getMessage(), e);
             }
         }
 
+        inboxFolder.close(true);
     }
 
     private Properties getServerProperties(String protocol, String host,

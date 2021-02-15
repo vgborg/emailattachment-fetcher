@@ -40,3 +40,4 @@ nb-configuration.xml
 
 config/application.properties
 .mvn/wrapper/maven-wrapper.jar
+*.log

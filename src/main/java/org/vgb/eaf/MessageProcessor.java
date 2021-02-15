@@ -22,7 +22,7 @@ public class MessageProcessor {
      * @param message
      * @return true if message was processed - can be deleted from inbox
      */
-    public boolean processMessage(Message message, EafConfiguration configuration) throws MessagingException, IOException {
+    public boolean processMessage(Message message, EafConfiguration configuration) throws MessagingException {
         LOG.infov("process message: no {0} - {1} {2} - {3}",
                 message.getMessageNumber(), message.getSentDate(),
                 ((message.getFrom().length > 0) ? message.getFrom()[0] : "no-from"),
@@ -32,40 +32,50 @@ public class MessageProcessor {
         //filenamePrefix += "_" + ((message.getFrom().length > 0) ? message.getFrom()[0] : "no-from");
         filenamePrefix += " - " + message.getSubject();
         //filenamePrefix = filenamePrefix.replaceAll(" ", "_");
+        filenamePrefix = filenamePrefix.replaceAll(":", "_");
         filenamePrefix = filenamePrefix.replaceAll("<", "_").replaceAll(">", "_");
 
+        int processedAttachments = 0;
+        boolean errornous = false;
 
-        Object messageContent = message.getContent();
-        if (! (messageContent instanceof Multipart)) {
-            throw new MessagingException("no multipart");
-        }
-        Multipart multipart = (Multipart) messageContent;
-        List<File> attachments = new ArrayList<File>();
-        for (int i = 0; i < multipart.getCount(); i++) {
-            BodyPart bodyPart = multipart.getBodyPart(i);
-            if(!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) &&
-                    StringUtils.isBlank(bodyPart.getFileName())) {
-                continue; // dealing with attachments only
+        try {
+            Object messageContent = message.getContent();
+            if (!(messageContent instanceof Multipart)) {
+                LOG.warn("no multipart: " + messageContent.getClass().getName());
+                errornous = true;
+            } else {
+                Multipart multipart = (Multipart) messageContent;
+                List<File> attachments = new ArrayList<File>();
+                for (int i = 0; i < multipart.getCount(); i++) {
+                    BodyPart bodyPart = multipart.getBodyPart(i);
+                    if (!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) &&
+                            StringUtils.isBlank(bodyPart.getFileName())) {
+                        continue; // dealing with attachments only
+                    }
+                    InputStream is = bodyPart.getInputStream();
+                    String extension = getExtensionByStringHandling(bodyPart.getFileName()).orElseGet(() -> "");
+                    String fileName = filenamePrefix + " - " + UUID.randomUUID().toString() + "." + extension;
+                    File f = new File(configuration.dirProcessedAttachments + "/" + fileName);
+                    LOG.infov("store attachment {0} named {1} in {2}", i, bodyPart.getFileName(), f.getAbsolutePath());
+                    FileOutputStream fos = new FileOutputStream(f);
+                    BufferedOutputStream bos = new BufferedOutputStream(fos);
+                    byte[] buf = new byte[800000];
+                    int bytesRead;
+                    while ((bytesRead = is.read(buf)) != -1) {
+                        bos.write(buf, 0, bytesRead);
+                    }
+                    bos.close();
+                    fos.close();
+                    //attachments.add(f);
+                    processedAttachments++;
+                }
             }
-            InputStream is = bodyPart.getInputStream();
-            String extension = getExtensionByStringHandling(bodyPart.getFileName()).orElseGet(() -> "");
-            String fileName = filenamePrefix + " - " + UUID.randomUUID().toString() + "." + extension;
-            File f = new File(configuration.dirProcessedAttachments + "/" + fileName);
-            LOG.infov("store attachment {0} named {1} in {2}", i, bodyPart.getFileName(), f.getAbsolutePath());
-            FileOutputStream fos = new FileOutputStream(f);
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
-            byte[] buf = new byte[800000];
-            int bytesRead;
-            while((bytesRead = is.read(buf))!=-1) {
-                bos.write(buf, 0, bytesRead);
-            }
-            bos.close();
-            fos.close();
-            //attachments.add(f);
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+            errornous = true;
         }
 
-        message.setFlag(Flags.Flag.SEEN, true);
-        return false;
+        return ! errornous;
     }
 
     public Optional<String> getExtensionByStringHandling(String filename) {
