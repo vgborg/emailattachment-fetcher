@@ -1,0 +1,77 @@
+image: maven:3.6.2-jdk-11
+
+stages:
+  - build
+  - test
+  - package
+  - deploy
+#  - build-jdk10
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode --show-version"
+
+#before_script:
+#  - "env"
+#  - "echo M2_HOME: $M2_HOME"
+#  - "echo MAVEN_OPTS: $MAVEN_OPTS"
+#  - "echo CI_JENKINS_USER: $CI_JENKINS_USER"
+
+build:
+  stage: build
+  artifacts:
+    paths:
+    - target
+    expire_in: 2 hrs
+  script:
+    - mvn $MAVEN_CLI_OPTS compile
+
+#build-jdk10:
+#  image: maven:3.5.3-jdk-10
+#  stage: build
+#  artifacts:
+#    paths:
+#      - target
+#    expire_in: 2 hrs
+#  script:
+#    - mvn $MAVEN_CLI_OPTS compile test package
+#  allow_failure: true
+# missing vgb-lang
+
+test:
+  stage: test
+  dependencies:
+    - build
+  artifacts:
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+    paths:
+      - target/surefire-reports
+      - target/site/jacoco
+    expire_in: 1 week
+  script:
+    - mvn $MAVEN_CLI_OPTS test
+    - cat target/site/jacoco/index.html || echo "no jacoco coverage"
+
+package:
+  stage: package
+  dependencies:
+    - build
+  artifacts:
+    paths:
+    - target/vs4m.war
+    expire_in: 1 week
+  script:
+    - mvn $MAVEN_CLI_OPTS -DskipTests -Dmaven.main.skip package
+#    - mvn $MAVEN_CLI_OPTS exec:java -Dexec.mainClass="com.example.app.App"
+
+
+
+deploy:
+  stage: deploy
+  dependencies:
+    - build
+  script:
+    - mvn $MAVEN_CLI_OPTS -DskipTests deploy
+  only:
+    - tags
