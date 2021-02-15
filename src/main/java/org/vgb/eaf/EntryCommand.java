@@ -1,6 +1,5 @@
-package org.acme.picocli;
+package org.vgb.eaf;
 
-import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
