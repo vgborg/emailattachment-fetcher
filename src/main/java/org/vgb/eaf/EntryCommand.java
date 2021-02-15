@@ -51,6 +51,9 @@ public class EntryCommand implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
+    @Inject
+    EafProcessor eafProcessor;
+
     @Override
     public int run(String... args) throws Exception {
         return new CommandLine(this, factory).execute(args);
@@ -67,6 +70,12 @@ public class EntryCommand implements Runnable, QuarkusApplication {
         String dirProcessedOut =
                 (paramenter_dirProcessedOut != null) ? paramenter_dirProcessedOut : config_dirProcessedOut;
 
-        LOG.infov("connect to {0} as {1}", config_imapTarget, config_imapUser);
+
+        EafConfiguration configuration = new EafConfiguration(
+                dirProcessedAttachments, dirProcessedErrors, dirProcessedOut,
+                config_imapTarget, config_imapUser, config_imapPassword
+        );
+
+        eafProcessor.process(configuration);
     }
 }
