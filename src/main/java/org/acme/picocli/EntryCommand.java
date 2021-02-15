@@ -1,9 +1,73 @@
 package org.acme.picocli;
 
 import io.quarkus.picocli.runtime.annotations.TopCommand;
+import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 import picocli.CommandLine;
 
-@TopCommand
-@CommandLine.Command(mixinStandardHelpOptions = true, subcommands = { HelloCommand.class, GoodbyeCommand.class })
-public class EntryCommand {
+import javax.inject.Inject;
+
+
+@QuarkusMain
+@CommandLine.Command(mixinStandardHelpOptions = true)
+public class EntryCommand implements Runnable, QuarkusApplication {
+
+    @ConfigProperty(name = "dir.processed.attachments")
+    String config_dirProcessedAttachments;
+
+    @ConfigProperty(name = "dir.processed.errors")
+    String config_dirProcessedErrors;
+
+    @ConfigProperty(name = "dir.processed.out")
+    String config_dirProcessedOut;
+
+
+
+    @ConfigProperty(name = "imap.target")
+    String config_imapTarget;
+
+    @ConfigProperty(name = "imap.user")
+    String config_imapUser;
+
+    @ConfigProperty(name = "imap.password")
+    String config_imapPassword;
+
+
+
+    @CommandLine.Option(names = {"-a", "--attachments"}, description = "Where to store attachments")
+    String paramenter_dirProcessedAttachments;
+
+    @CommandLine.Option(names = {"-e", "--errors"}, description = "Where to store errornous mails")
+    String paramenter_dirProcessedErrors;
+
+    @CommandLine.Option(names = {"-o", "--out"}, description = "Where to store processed emails")
+    String paramenter_dirProcessedOut;
+
+
+    private static final Logger LOG = Logger.getLogger(EntryCommand.class);
+
+
+    @Inject
+    CommandLine.IFactory factory;
+
+    @Override
+    public int run(String... args) throws Exception {
+        return new CommandLine(this, factory).execute(args);
+    }
+
+    @Override
+    public void run() {
+        String dirProcessedAttachments =
+                (paramenter_dirProcessedAttachments != null) ? paramenter_dirProcessedAttachments : config_dirProcessedAttachments;
+
+        String dirProcessedErrors =
+                (paramenter_dirProcessedErrors != null) ? paramenter_dirProcessedErrors : config_dirProcessedErrors;
+
+        String dirProcessedOut =
+                (paramenter_dirProcessedOut != null) ? paramenter_dirProcessedOut : config_dirProcessedOut;
+
+        LOG.infov("connect to {0} as {1}", config_imapTarget, config_imapUser);
+    }
 }
