@@ -1,8 +1,5 @@
-# code-with-quarkus project
+# emailattachment-fetcher
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
-
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
 ## Running the application in dev mode
 
@@ -39,19 +36,28 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 ./mvnw package -Pnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/code-with-quarkus-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html.
-
-# Picocli Example
-
-Hello and goodbye are civilization fundamentals. Let's not forget it with this picocli application by changing the `command` and `parameters`.
-
-Also for picocli applications the dev mode is supported. When running dev mode, the picocli application is executed and on press of the Enter key, is restarted.
-
-As picocli applications will often require arguments to be passed on the commandline, this is also possible in dev mode via:
+# Commandline
 ```shell script
 ./mvnw compile quarkus:dev -Dquarkus.args=='help'
 ```
+or run packaged jar
+```
+❯ java -jar .\target\emailattachment-fetcher-1.0.0-SNAPSHOT-runner.jar --help
+```
 
-Guide: https://quarkus.io/guides/picocli
+## Usage
+```
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+[...]
+Usage: <main class> [-hV] [-a=<dir>] [-e=<dir>] [-o=<dir>] [-s=<seconds>]
+  -a, --attachments=<dir>   Where to store attachments
+  -e, --errors=<dir>        Where to store errornous mails
+  -h, --help                Show this help message and exit.
+  -o, --out=<dir>           Where to store processed emails
+  -s, --seconds=<seconds>   Repeat every x seconds
+  -V, --version             Print version information and exit.
+[...]
+```
