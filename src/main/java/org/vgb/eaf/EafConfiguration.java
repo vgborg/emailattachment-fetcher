@@ -16,13 +16,26 @@ public class EafConfiguration {
 
     String imapPassword;
 
-    public EafConfiguration(String dirProcessedAttachments, String dirProcessedErrors, String dirProcessedOut, String imapTarget, String imapUser, String imapPassword) {
+    boolean imapDebug;
+
+    public EafConfiguration(String dirProcessedAttachments, String dirProcessedErrors, String dirProcessedOut,
+                            String imapTarget, String imapUser, String imapPassword, boolean imapDebug
+    ) {
         this.dirProcessedAttachments = dirProcessedAttachments;
         this.dirProcessedErrors = dirProcessedErrors;
         this.dirProcessedOut = dirProcessedOut;
         this.imapTarget = imapTarget;
         this.imapUser = imapUser;
         this.imapPassword = imapPassword;
+        this.imapDebug = imapDebug;
+    }
+
+    public boolean isImapDebug() {
+        return imapDebug;
+    }
+
+    public void setImapDebug(boolean imapDebug) {
+        this.imapDebug = imapDebug;
     }
 
     public String getDirProcessedAttachments() {

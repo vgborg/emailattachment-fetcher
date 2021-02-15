@@ -33,6 +33,8 @@ public class EntryCommand implements Runnable, QuarkusApplication {
     @ConfigProperty(name = "imap.password")
     String config_imapPassword;
 
+    @ConfigProperty(name ="imap.debug")
+    boolean imapDebug;
 
 
     @CommandLine.Option(names = {"-a", "--attachments"}, description = "Where to store attachments")
@@ -70,10 +72,9 @@ public class EntryCommand implements Runnable, QuarkusApplication {
         String dirProcessedOut =
                 (paramenter_dirProcessedOut != null) ? paramenter_dirProcessedOut : config_dirProcessedOut;
 
-
         EafConfiguration configuration = new EafConfiguration(
                 dirProcessedAttachments, dirProcessedErrors, dirProcessedOut,
-                config_imapTarget, config_imapUser, config_imapPassword
+                config_imapTarget, config_imapUser, config_imapPassword, imapDebug
         );
 
         try {

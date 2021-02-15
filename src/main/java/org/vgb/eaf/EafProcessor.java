@@ -3,32 +3,50 @@ package org.vgb.eaf;
 import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.mail.MessagingException;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
-import javax.mail.Store;
-import java.net.MalformedURLException;
+import javax.inject.Inject;
+import javax.mail.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Properties;
 
 @ApplicationScoped
 public class EafProcessor {
     private static final Logger LOG = Logger.getLogger(EafProcessor.class);
+    public static final String INBOX = "INBOX";
+
+    @Inject
+    MessageProcessor messageProcessor;
 
     public void process(EafConfiguration configuration) throws MessagingException, URISyntaxException {
         URI u = new URI(configuration.getImapTarget());
         String protocol = u.getScheme();
         Properties properties = getServerProperties(protocol, u.getHost(), u.getPort());
         Session session = Session.getInstance(properties);
-        session.setDebug(true);
+        session.setDebug(configuration.isImapDebug());
         Store store = session.getStore(protocol);
         LOG.infov("authenticate as {0}", configuration.getImapUser());
         store.connect(configuration.getImapUser(), configuration.imapPassword);
 
 
         LOG.info("connected");
+
+
+        Folder inboxFolder = store.getFolder(INBOX);
+        inboxFolder.open(Folder.READ_WRITE);
+        Message[] messages = inboxFolder.getMessages();
+        LOG.infov("folder {0} contains {1} messages", inboxFolder.getName(), messages.length);
+
+        for (Message msg : messages) {
+            try {
+                boolean processed = messageProcessor.processMessage(msg, configuration);
+                if (processed) {
+                    msg.setFlag(Flags.Flag.DELETED, true);
+                }
+            } catch (Exception e) {
+                LOG.error(e.getMessage(), e);
+            }
+        }
+
     }
 
     private Properties getServerProperties(String protocol, String host,
@@ -70,5 +88,4 @@ public class EafProcessor {
 
         return properties;
     }
-
 }
