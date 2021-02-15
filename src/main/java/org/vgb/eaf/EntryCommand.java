@@ -76,6 +76,10 @@ public class EntryCommand implements Runnable, QuarkusApplication {
                 config_imapTarget, config_imapUser, config_imapPassword
         );
 
-        eafProcessor.process(configuration);
+        try {
+            eafProcessor.process(configuration);
+        } catch (Throwable e) {
+            LOG.error(e.getMessage(), e);
+        }
     }
 }
