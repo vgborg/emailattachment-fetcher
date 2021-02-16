@@ -67,6 +67,8 @@ public class EntryCommand implements Runnable, QuarkusApplication {
 
     @Override
     public void run() {
+        System.out.println("== Email attachment fetcher ===");
+
         String dirProcessedAttachments =
                 (paramenter_dirProcessedAttachments != null) ? paramenter_dirProcessedAttachments : config_dirProcessedAttachments;
 
@@ -81,18 +83,21 @@ public class EntryCommand implements Runnable, QuarkusApplication {
                 config_imapTarget, config_imapUser, config_imapPassword, imapDebug
         );
 
-        boolean repeat = (paramenter_seconds != null) && paramenter_seconds > 0;
+        boolean repeat = false;
+        do {
+            repeat = (paramenter_seconds != null) && paramenter_seconds > 0;
 
-        while (repeat) {
             try {
                 eafProcessor.process(configuration);
                 if (repeat) {
                     LOG.infov("sleep {0} seconds to run again", paramenter_seconds);
                     Thread.sleep(paramenter_seconds * 1000);
+                } else {
+                    LOG.infov("no repeat - exitting");
                 }
             } catch (Throwable e) {
                 LOG.error(e.getMessage(), e);
             }
-        }
+        } while (repeat);
     }
 }
