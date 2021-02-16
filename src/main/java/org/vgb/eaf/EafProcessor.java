@@ -13,6 +13,10 @@ import java.text.SimpleDateFormat;
 import java.util.Properties;
 import java.util.UUID;
 
+/**
+ * connect to IMAP server and check for mails.
+ * Mails are processed in `MessageProcessor`
+ */
 @ApplicationScoped
 public class EafProcessor {
     private static final Logger LOG = Logger.getLogger(EafProcessor.class);
@@ -68,6 +72,7 @@ public class EafProcessor {
             }
         }
 
+        // close folder and delete messages marked for deletion
         inboxFolder.close(true);
     }
 

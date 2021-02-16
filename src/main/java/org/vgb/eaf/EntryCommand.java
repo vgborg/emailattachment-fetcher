@@ -8,7 +8,11 @@ import picocli.CommandLine;
 
 import javax.inject.Inject;
 
-
+/**
+ * Entry point for command line.
+ * Just accept parameters, setup `EafConfiguration` object and
+ * start `EafProcessor` (in loop if enabled).
+ */
 @QuarkusMain
 @CommandLine.Command(mixinStandardHelpOptions = true)
 public class EntryCommand implements Runnable, QuarkusApplication {
