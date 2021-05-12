@@ -50,11 +50,15 @@ Start and check INBOX once and exit.
 # java -jar ./target/emailattachment-fetcher-1.0.0-SNAPSHOT-runner.jar
 ```
 
-Start and check INBOX every 60 seconds - repeated until exit via Strg-C.
+Start and check INBOX every 60 seconds
 ```
-# java -jar ./target/emailattachment-fetcher-1.0.0-SNAPSHOT-runner.jar -r 60
+# java -jar ./target/emailattachment-fetcher-1.0.0-SNAPSHOT-runner.jar -s 60
 ```
+will be repeated until exit via Strg-C.
 
+
+
+___
 
 
 # Dev Info
