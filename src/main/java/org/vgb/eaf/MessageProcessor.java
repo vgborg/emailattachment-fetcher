@@ -44,10 +44,13 @@ public class MessageProcessor {
                 List<File> attachments = new ArrayList<File>();
                 for (int i = 0; i < multipart.getCount(); i++) {
                     BodyPart bodyPart = multipart.getBodyPart(i);
-                    if (!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) &&
+
+                    if (!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) ||
                             StringUtils.isBlank(bodyPart.getFileName())) {
+                        LOG.info("skip attachment " + bodyPart.getDisposition() + " - " + bodyPart.getFileName());
                         continue; // dealing with attachments only
                     }
+
                     InputStream is = bodyPart.getInputStream();
                     String extension = getExtensionByStringHandling(bodyPart.getFileName()).orElseGet(() -> "");
                     String fileName = filenamePrefix + " - " + UUID.randomUUID().toString() + "." + extension;
@@ -62,8 +65,12 @@ public class MessageProcessor {
                     }
                     bos.close();
                     fos.close();
-                    //attachments.add(f);
+
                     processedAttachments++;
+                }
+                if (processedAttachments == 0) {
+                    LOG.warn("no attachments");
+                    errornous = true;
                 }
             }
         } catch (Exception e) {

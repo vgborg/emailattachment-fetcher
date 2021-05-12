@@ -1,5 +1,8 @@
 package org.vgb.eaf;
 
+import com.sun.mail.imap.IMAPFolder;
+import com.sun.mail.imap.IMAPStore;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -7,6 +10,7 @@ import javax.inject.Inject;
 import javax.mail.*;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
@@ -22,6 +26,12 @@ public class EafProcessor {
     private static final Logger LOG = Logger.getLogger(EafProcessor.class);
     public static final String INBOX = "INBOX";
 
+    @ConfigProperty(name = "imap.purge")
+    boolean imapPurge = false;
+
+    @ConfigProperty(name = "processed.target")
+    String processedTarget;
+
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm");
 
     @Inject
@@ -33,7 +43,7 @@ public class EafProcessor {
         Properties properties = getServerProperties(protocol, u.getHost(), u.getPort());
         Session session = Session.getInstance(properties);
         session.setDebug(configuration.isImapDebug());
-        Store store = session.getStore(protocol);
+        IMAPStore store = (IMAPStore) session.getStore(protocol);
         LOG.infov("authenticate as {0}", configuration.getImapUser());
         store.connect(configuration.getImapUser(), configuration.imapPassword);
 
@@ -41,8 +51,21 @@ public class EafProcessor {
         LOG.debug("connected");
 
 
-        Folder inboxFolder = store.getFolder(INBOX);
+
+
+        IMAPFolder inboxFolder = (IMAPFolder) store.getFolder(INBOX);
         inboxFolder.open(Folder.READ_WRITE);
+
+
+        MessageMover messageMover = null;
+        if ("dir".equals(processedTarget)) {
+            messageMover = this::messageMoverSaveInDir;
+        } else if ("imap".equals(processedTarget)) {
+            messageMover = (msg, target)  -> messageMoverImap(msg, target, store);
+        } else {
+            throw new RuntimeException("messageMover \"" + processedTarget + "\" (processed.target) not defined");
+        }
+
         Message[] messages = inboxFolder.getMessages();
         LOG.infov("folder {0} contains {1} messages", inboxFolder.getName(), messages.length);
 
@@ -57,24 +80,49 @@ public class EafProcessor {
             msg.setFlag(Flags.Flag.SEEN, true);
 
             try {
-                // store EML as processed
-                String messageFileTarget = processed ? configuration.getDirProcessedOut() : configuration.getDirProcessedErrors();
-                messageFileTarget += "/" + df.format(msg.getSentDate()) + " " + UUID.randomUUID().toString() + ".eml";
-                LOG.infov("store message in {0}", messageFileTarget);
-                FileOutputStream fos = new FileOutputStream(messageFileTarget);
-                BufferedOutputStream bos = new BufferedOutputStream(fos);
-                msg.writeTo(bos);
-                bos.close();
-                fos.close();
 
-                msg.setFlag(Flags.Flag.DELETED, true);
+                // store EML as processed
+                String messageFileTarget = processed ?
+                        configuration.getDirProcessedOut() :
+                        configuration.getDirProcessedErrors();
+
+
+                messageMover.moveMessage(msg, messageFileTarget);
+
             } catch (Exception e) {
                 LOG.error("error postprocessing - " + e.getMessage(), e);
             }
         }
 
         // close folder and delete messages marked for deletion
-        inboxFolder.close(true);
+        inboxFolder.close(imapPurge);
+    }
+
+    private void messageMoverImap(Message message, String messageFileTarget, IMAPStore store) throws MessagingException {
+        LOG.infov("store message in imap folder {0}", messageFileTarget);
+
+
+        IMAPFolder targetFolder = (IMAPFolder) store.getFolder(messageFileTarget);
+        if (! targetFolder.exists()) {
+            LOG.warn("create folder: " + messageFileTarget);
+            targetFolder.create(IMAPFolder.HOLDS_MESSAGES);
+        }
+
+        IMAPFolder sourceFolder = ((IMAPFolder)message.getFolder());
+        sourceFolder.moveMessages(new Message[]{message}, targetFolder);
+    }
+
+    private void messageMoverSaveInDir(Message msg, String messageFileTarget) throws MessagingException, IOException {
+        messageFileTarget += "/" + df.format(msg.getSentDate()) + " " + UUID.randomUUID().toString() + ".eml";
+        LOG.infov("store message in filesystem {0}", messageFileTarget);
+        FileOutputStream fos = new FileOutputStream(messageFileTarget);
+        BufferedOutputStream bos = new BufferedOutputStream(fos);
+        msg.writeTo(bos);
+        bos.close();
+        fos.close();
+
+        // set deleted - because saved in filesystem
+        msg.setFlag(Flags.Flag.DELETED, true);
     }
 
     private Properties getServerProperties(String protocol, String host,
