@@ -26,11 +26,6 @@ public class EafProcessor {
     private static final Logger LOG = Logger.getLogger(EafProcessor.class);
     public static final String INBOX = "INBOX";
 
-    @ConfigProperty(name = "imap.purge")
-    boolean imapPurge = false;
-
-    @ConfigProperty(name = "processed.target")
-    String processedTarget;
 
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm");
 
@@ -38,6 +33,8 @@ public class EafProcessor {
     MessageProcessor messageProcessor;
 
     public void process(EafConfiguration configuration) throws MessagingException, URISyntaxException {
+        LOG.info("process >> " + configuration);
+
         URI u = new URI(configuration.getImapTarget());
         String protocol = u.getScheme();
         Properties properties = getServerProperties(protocol, u.getHost(), u.getPort());
@@ -47,23 +44,19 @@ public class EafProcessor {
         LOG.infov("authenticate as {0}", configuration.getImapUser());
         store.connect(configuration.getImapUser(), configuration.imapPassword);
 
-
         LOG.debug("connected");
-
-
-
 
         IMAPFolder inboxFolder = (IMAPFolder) store.getFolder(INBOX);
         inboxFolder.open(Folder.READ_WRITE);
 
 
         MessageMover messageMover = null;
-        if ("dir".equals(processedTarget)) {
+        if ("dir".equals(configuration.getProcessedTarget())) {
             messageMover = this::messageMoverSaveInDir;
-        } else if ("imap".equals(processedTarget)) {
+        } else if ("imap".equals(configuration.getProcessedTarget())) {
             messageMover = (msg, target)  -> messageMoverImap(msg, target, store);
         } else {
-            throw new RuntimeException("messageMover \"" + processedTarget + "\" (processed.target) not defined");
+            throw new RuntimeException("messageMover \"" + configuration.getProcessedTarget() + "\" (processed.target) not defined");
         }
 
         Message[] messages = inboxFolder.getMessages();
@@ -95,7 +88,7 @@ public class EafProcessor {
         }
 
         // close folder and delete messages marked for deletion
-        inboxFolder.close(imapPurge);
+        inboxFolder.close(configuration.isImapPurge());
     }
 
     private void messageMoverImap(Message message, String messageFileTarget, IMAPStore store) throws MessagingException {

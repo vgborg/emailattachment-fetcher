@@ -40,6 +40,13 @@ public class EntryCommand implements Runnable, QuarkusApplication {
     @ConfigProperty(name ="imap.debug")
     boolean imapDebug;
 
+    @ConfigProperty(name = "imap.purge")
+    boolean imapPurge = false;
+
+    @ConfigProperty(name = "processed.target")
+    String processedTarget;
+
+
 
     @CommandLine.Option(names = {"-a", "--attachments"}, description = "Where to store attachments", paramLabel = "<dir>")
     String paramenter_dirProcessedAttachments;
@@ -82,9 +89,12 @@ public class EntryCommand implements Runnable, QuarkusApplication {
         String dirProcessedOut =
                 (paramenter_dirProcessedOut != null) ? paramenter_dirProcessedOut : config_dirProcessedOut;
 
+
+
         EafConfiguration configuration = new EafConfiguration(
                 dirProcessedAttachments, dirProcessedErrors, dirProcessedOut,
-                config_imapTarget, config_imapUser, config_imapPassword, imapDebug
+                config_imapTarget, config_imapUser, config_imapPassword, imapDebug,
+                imapPurge, processedTarget
         );
 
         boolean repeat = false;
