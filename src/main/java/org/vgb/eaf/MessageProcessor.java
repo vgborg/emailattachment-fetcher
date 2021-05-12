@@ -29,11 +29,7 @@ public class MessageProcessor {
                 message.getSubject()
         );
         String filenamePrefix = df.format(message.getSentDate());
-        //filenamePrefix += "_" + ((message.getFrom().length > 0) ? message.getFrom()[0] : "no-from");
-        filenamePrefix += " - " + message.getSubject();
-        //filenamePrefix = filenamePrefix.replaceAll(" ", "_");
-        filenamePrefix = filenamePrefix.replaceAll(":", "_");
-        filenamePrefix = filenamePrefix.replaceAll("<", "_").replaceAll(">", "_");
+        filenamePrefix += " - " + filenameEscape(message.getSubject());
 
         int processedAttachments = 0;
         boolean errornous = false;
@@ -82,5 +78,14 @@ public class MessageProcessor {
         return Optional.ofNullable(filename)
                 .filter(f -> f.contains("."))
                 .map(f -> f.substring(filename.lastIndexOf(".") + 1));
+    }
+
+    /**
+     * creates a safe filename derived from subject
+     * @param subject
+     * @return
+     */
+    protected static String filenameEscape(String subject) {
+        return subject.replaceAll("[^a-zA-Z0-9\\-]", "_");
     }
 }

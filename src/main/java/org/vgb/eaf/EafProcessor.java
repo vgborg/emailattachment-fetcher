@@ -57,6 +57,7 @@ public class EafProcessor {
             msg.setFlag(Flags.Flag.SEEN, true);
 
             try {
+                // store EML as processed
                 String messageFileTarget = processed ? configuration.getDirProcessedOut() : configuration.getDirProcessedErrors();
                 messageFileTarget += "/" + df.format(msg.getSentDate()) + " " + UUID.randomUUID().toString() + ".eml";
                 LOG.infov("store message in {0}", messageFileTarget);
