@@ -2,7 +2,11 @@
 
 Checks IMAP(S) folder (`INBOX`) for new mails, extracts attachments and saves them to a specified
 folder in the file system.
-Saves the mail as `eml` to `out` or `errors` dir and deletes message from server.
+The processed mail will be 
+* saved as `eml` to `out` or `errors` dir and deleted from IMAP server
+* moved to `out` or `errors` IMAP folder
+
+Can be run as one-shot or in watch-loop with sleeping period.
 
 Currently used to check shared mailboxes at Exchange Online / O365 Office Mail 
 (for invoices).
