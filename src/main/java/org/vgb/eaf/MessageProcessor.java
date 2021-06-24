@@ -93,6 +93,9 @@ public class MessageProcessor {
      * @return
      */
     protected static String filenameEscape(String subject) {
+        if (subject == null) {
+            subject = "kein Betreff";
+        }
         return subject.replaceAll("[^a-zA-Z0-9\\-]", "_");
     }
 }
