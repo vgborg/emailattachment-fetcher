@@ -52,7 +52,16 @@ public class MessageProcessor {
                     }
 
                     InputStream is = bodyPart.getInputStream();
+                    // don´t use filename - use prefix derived from subject and random UUID - but keep extension
                     String extension = getExtensionByStringHandling(bodyPart.getFileName()).orElseGet(() -> "");
+                    // clean up extension for cases like
+                    // =?iso-8859-1?Q?Rechnung_f=FCr_Herrn_Schmidt_31.05.2021_-_05.06.2021.pdf?=
+                    if (extension.endsWith("?=")) {
+                        LOG.info("eliminate ?=");
+                        extension.replace("?=", "");
+                    }
+                    extension = filenameEscape(extension);
+
                     String fileName = filenamePrefix + " - " + UUID.randomUUID().toString() + "." + extension;
                     File f = new File(configuration.dirProcessedAttachments + "/" + fileName);
                     LOG.infov("store attachment {0} named {1} in {2}", i, bodyPart.getFileName(), f.getAbsolutePath());
